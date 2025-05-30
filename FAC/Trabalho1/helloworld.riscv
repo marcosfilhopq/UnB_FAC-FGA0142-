@@ -1,0 +1,12 @@
+.data
+	hello: .asciz "Ola Mundo\n"
+.text 
+.globl main
+
+main:
+	li a7,4 #Chamada(Symcall) para printar string 
+	la a0, hello #Pega o endereço da variavel hello e aponta para onde está o texto
+	ecall 
+	
+	li a7, 10 #Symcall de exit, acabar o programa
+	ecall #Finaliza (Sempre colocar esse ecall ao final)

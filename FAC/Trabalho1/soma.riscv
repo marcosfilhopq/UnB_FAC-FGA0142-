@@ -1,0 +1,32 @@
+.data
+
+.text
+.globl main
+
+main:
+	#Leitura do primeiro numero
+	
+	li a7, 5 #Syscall para read int(ler inteiro), semelhante ao scanf em C
+	ecall #Não precisa de argumento de entrada, logo só colcoar ecall
+	mv t0, a0 #Salvo na variavel t0. mv=move
+	
+	#Leitura do segundo numero
+	li a7, 5 
+	ecall 
+	mv t1, a0 #Salvo na variavel t1, porque t0 já esta ocupado
+	
+	#Soma
+	add t2,t0,t1 #Soma os resultados em t2
+	
+	li a7, 1 #Printar inteiro
+	mv a0, t2 #Como é numero, nao se usa 'la' e sim 'mv'
+	ecall
+	
+	# Imprime quebra de linha (importante para passar nos testes automáticos!)
+    	li a7, 11       # Código da syscall print_char
+    	li a0, 10       # ASCII de '\n' (nova linha)
+    	ecall
+	
+	#Finaliza o programa
+	li a7, 10 #Syscall de exit, acabar o programa
+	ecall #Finaliza (Sempre colocar esse ecall ao final)

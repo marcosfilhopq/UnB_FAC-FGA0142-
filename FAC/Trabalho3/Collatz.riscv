@@ -1,0 +1,79 @@
+.data
+	inv: .asciz "entrada invalida."
+	nlinha: .asciz "\n"
+	
+.text 
+.globl main
+
+main:	#Lê numero
+	li a7, 5
+	ecall
+	mv s0, a0
+	
+	#Valido ou invalido(>1)
+	li t0, 2
+	blt s0, t0, fim_if
+	
+	li s2, 0 #contador
+	
+loop:
+
+	#Como é loop, verifica se s0 chegou a 1
+	li t1, 1
+	beq s0, t1, fim #vai pro fim quando chega a 1
+	
+	#Verifica se é par ou impar
+	andi t2, s0, 1 #t2 = s0 and 1, confere o ultimo bit
+	beq t2, zero, par
+	
+	#CHEGOU AQUI, É IMPAR!
+	#multiplcacao por 3
+	li t3, 3
+	mul s0, s0, t3 #so=s0*3
+	
+	#soma 1
+	addi s0, s0, 1 #so=s0+1
+	
+	#contador
+	addi s2, s2, 1
+	
+	j loop
+
+par:
+	#divisao por 2 se for par
+	li t4, 2
+	div s0, s0, t4
+	
+	#contador
+	addi s2, s2, 1
+	
+	j loop
+
+fim_if: #Printa inv
+	li a7,4
+	la a0,inv
+	ecall
+	
+	li a7, 4
+	la a0, nlinha
+	ecall
+	
+	j fim_inv
+	
+fim:
+	#printa contador
+    	mv a0, s2
+    	li a7, 1
+    	ecall
+    	
+    	li a7, 4
+	la a0, nlinha
+	ecall
+	
+fim_inv:
+
+	#termina o processo so com a mensagem
+	li a7, 10
+	ecall
+	
+	

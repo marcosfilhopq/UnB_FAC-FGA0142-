@@ -1,0 +1,47 @@
+.data
+.text
+.globl main
+
+main:
+	#Le primeiro numero
+	li a7, 5
+	ecall
+	mv s0, a0
+	
+	#Contador 
+	li t0, 32 #Conta de 0 a 31 bits
+    	li t4, 0  #contador de zeros à esquerda (nlz)
+    	li t5, 0  #Observa se encontrou o numero 1
+
+loop:
+	li t1, 0x80000000 #Deixa o msb igual a 1
+	and t2, s0, t1 #t2 = s0(n) and t1(mascara), isola o msb
+	beq t2, x0, contaZ #Basicamente é um if, caso t2 seja igual a 0, localizado no x0, printa o 0
+	li t5, 1 #Achou o 1
+	j shift #Proximo bit
+
+contaZ:
+    	beq t5, x0, inc    #se t5==0,conta zero
+    	j shift #se encontrou 1, nao incrementa mais
+    	
+inc:
+	addi t4,t4,1 #incrementa o contador de zeros
+
+shift:
+    	slli s0, s0, 1      #leva o 1 pra esquerda
+    	addi t0, t0, -1     #decrementa o contador do loop
+    	bnez t0, loop       #Se t0 ≠ 0, repete o loop
+	
+	#imprime o valor de nlz 
+	li a7, 1
+     	mv a0, t4
+   	ecall
+   	
+   	li a0, 10      # Código ASCII para '\n' (nova linha)
+	li a7, 11      # Syscall para imprimir caractere
+	ecall
+
+	#Finaliza
+	li a0, 0
+	li a7,10
+	ecall

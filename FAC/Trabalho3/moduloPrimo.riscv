@@ -1,0 +1,170 @@
+.data
+	inv: .asciz "Entradas invalidas."
+	nprimo: .asciz "O modulo nao eh primo."
+	antes: .asciz "A exponencial modular "
+	ele: .asciz " elevado a " 
+	esq_mod: .asciz " (mod "
+	dir_mod: .asciz ") "
+	eh: .asciz "eh "
+	nova_linha: .asciz "\n"
+	ponto: .asciz "."
+.text 
+.globl main
+
+main: 	#Lê primeiro numero
+	li a7,5
+	ecall
+	mv s0, a0
+	
+	#Lê segundo numero
+	li a7,5
+	ecall
+	mv s1, a0
+	
+	#Lê terceiro numero
+	li a7,5
+	ecall
+	mv s2, a0
+	
+	#verifica o intervalo de 1 a 65535
+	li t0, 1
+	li t1, 65535
+	
+	blt s0, t0, fim_if #se s0<t0(1), vai para fim_if(entradas invalidas)
+	blt s1, t0, fim_if
+	blt s2, t0, fim_if
+	
+	bgt s0, t1, fim_if #se s0>t1(65535), vai para fim_if(entradas invalidas)
+	bgt s1, t1, fim_if
+	bgt s2, t1, fim_if
+	
+	beqz s0, fim_if #confere se s0==0
+	beqz s1, fim_if
+	beqz s2, fim_if
+	
+	# Verifica se s2<2, no caso dele ser 1, dos positivos
+	li t0, 2
+	blt s2, t0, nao_primo
+
+verifica_primo:
+    mul t3, t0, t0
+    bgt t3, s2, continua   # se t3>s2, então é primo
+
+    rem t4, s2, t0
+    beqz t4, nao_primo     # achou divisor, não é primo
+
+    addi t0, t0, 1
+    j verifica_primo
+
+nao_primo: #caso nao seja primo, pula pra ca
+	li a7,4
+	la a0, nprimo
+	ecall
+	
+	li a7, 4      
+	la a0, nova_linha
+	ecall
+	
+	j fim #encerra logo, antes de imprimir outras coisa
+	
+continua:
+    	#parte onde conferiu se é positivo e se o s2 é primo
+    	li a7, 4
+    	la a0, antes #printa "A exponencial modular "
+    	ecall
+    	
+    	#printa s0
+    	li a7,1
+    	mv a0, s0
+    	ecall
+    	
+    	#printa "elevado a " 
+    	li a7,4
+    	la a0, ele
+    	ecall
+    	
+    	#printa s1
+    	li a7,1
+    	mv a0, s1
+    	ecall
+    	
+    	#printa " (mod  
+    	li a7,4
+    	la a0, esq_mod
+    	ecall
+    	
+    	#printa s2
+    	li a7,1
+    	mv a0, s2
+    	ecall
+    	
+    	#printa ") " 
+    	li a7,4
+    	la a0, dir_mod
+    	ecall
+    	
+    	#printa " eh " 
+    	li a7,4
+    	la a0, eh
+    	ecall
+    	
+    	#PARTE do modulo
+    	li t0,0 #contador sendo 0
+    	li t1, 1 #armazena o resultado da equacao
+    	
+    	# Exponenciação modular rápida (base = s0, exp = s1, mod = s2)
+    	mv t0, s0      #base
+    	mv t1, s1      # expoente
+    	mv t2, s2      #mod
+    	li t3, 1       #resultado
+
+loop:
+    	beqz t1, print_resul # se expoente == 0 acaba
+
+    	andi t4, t1, 1 # t4 = t1 % 2
+    	beqz t4, mult #se t4==0, nao multiplica 
+
+	# t5 = resultado* base
+    	mul t5, t3, t0          
+    	
+    	# resultado =(resultado * base) % mod
+    	remu t3, t5, t2         
+	
+mult:
+    	mul t0, t0, t0          #base= base * base
+    	remu t0, t0, t2         #base %= mod
+    	srli t1, t1, 1          #expoente >>= 1
+    	
+    	j loop
+
+print_resul:
+	mv a0, t3
+	li a7, 1
+	ecall
+	
+	#printa ponto final
+	li a7, 4
+	la a0, ponto
+	ecall
+
+	li a7, 4      
+	la a0, nova_linha
+	ecall
+	
+    	j fim #encerra
+	
+fim_if: 
+	#Printa entradas invalidas 
+	li a7, 4
+	la a0, inv
+	ecall
+	
+	li a7, 4      
+	la a0, nova_linha
+	ecall
+fim:
+	li a7,10
+	ecall
+	
+	
+

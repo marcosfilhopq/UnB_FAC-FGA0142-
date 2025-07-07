@@ -1,0 +1,158 @@
+.data
+    	chave:.space 65  # 64 carcateres + '\0'
+    	string:.space 33 # 32 bytes + '\0'
+    	hex: .asciz  "0123456789abcdef" #tabela hexadecimal
+    	nlinha:.asciz "\n"
+
+.text
+.globl main
+
+main:
+   	# Le chave
+    	li a7, 8
+    	la a0, chave
+    	
+    	li a1, 65 #limita o numero de bits
+    	ecall
+    	
+    	
+    	# Le string
+    	li a7, 8
+    	la a0, string
+    	
+    	li a1, 33
+    	ecall
+    	
+    	# limpa o '\n' da string
+    	la t0, string
+    	
+loop_limpa:
+    	lb t1, 0(t0)
+    	beq t1, zero, fim_limpa #se for igual a \0 acaba, cabou string
+    	
+    	li t2, 10 #assume valor
+    	
+    	beq t1, t2, limpa_nlinha #compara t1 e t2, se for igual encontrou o quebra linha
+    	addi t0, t0, 1 #vai para o proximo
+    	
+    	j loop_limpa #volta para limpar
+    	
+limpa_nlinha:
+    	sb zero, 0(t0) #sobrescreve 0 em \n
+    	
+fim_limpa:
+
+    	#ponteiros
+    	la s0, chave # ponteiro pra chave
+    	
+    	la s1, string # ponteiro string
+    	
+    	la s2, hex # ponteiro tabela ehxadecimai
+
+loop:
+    	lb t0, 0(s1) #carrega o atual, q nem do Descode64
+    	beqz t0, fim #quando chegar a \0 acaba loop
+
+    	# pra le dois caracteres da chave
+    	lb t1, 0(s0) #primeiro lido
+    	lb t2, 1(s0) #segundo lido
+    	
+    	#pega o valor convertido do primeiro caracter
+    	mv a1, t1
+    	jal ra, converte_hex_num #chama função, ra equivalente a return
+    	mv t3, a0 #salvo o valor retornado
+    	
+    	#pega o valor convertido do segundo caracter
+    	mv a1, t2
+    	jal ra, converte_hex_num
+    	
+    	#shift para deslocar os 4 bits a esuqerda
+    	slli t3, t3, 4
+    	or t3, t3, a0 #forma o byte
+
+    	#carrega caractere da string
+    	lb t4, 0(s1)
+
+    	#OTP(xOR entre caractere da string e byte da chave)
+    	xor t5, t3, t4 #fica em t5 o xor entre t3 e t4
+
+    	#inversao com o not
+    	not t5, t5
+    	
+    	andi t5, t5, 0xFF # mantém apenas os 8 bits menos significativos
+
+    	srli t6, t5, 4 #4 bits mais altos do byte invertido/desloca 4 bits a direita.
+    	andi t6, t6, 0x0F #garnte intervalo, 0 a 15
+    	add t6, t6, s2 #endereço do caractere da tabela hexadeccimal
+    	lb a0, 0(t6) #guarda em a0
+    	
+    	#printa primeiro caractere
+    	li a7, 11
+    	ecall
+
+    	andi t6, t5, 0x0F #isola 4 bits menos significativo
+    	add t6, t6, s2 #endereço do caractere da tabela hexadeccimal
+    	lb a0, 0(t6) #guarda em a0
+    	
+    	#printa segundo caracter 
+    	li a7, 11
+    	ecall
+
+    	addi s0, s0, 2 #avanca mais duas poscicoese da chave 
+    	addi s1, s1, 1 #avan um da string
+    	j loop #tudo se repete
+
+fim:
+    	la a0, nlinha
+    	li a7, 4
+    	ecall
+
+	#finaliza
+    	li a7, 10
+    	ecall
+
+# Converte caractere ASCII em a1 para a0(0 a 15)
+converte_hex_num:
+    	mv a0, a1
+    	
+    	#intervalo
+    	li t0, 48 #codigo pra 0
+    	li t1, 57 #codigo pra 9
+    	
+    	blt a0, t0, minuscula #menor que t0(0)
+    	bgt a0, t1, minuscula #dentro do intervalo
+    	
+    	# está entre 0 e 9
+    	sub a0, a0, t0
+    	jr ra
+
+minuscula:
+	#intervalo
+    	li t0, 97 #a
+    	li t1, 102 #f
+    	
+    	blt a0, t0, maiuscula
+    	bgt a0, t1, maiuscula
+    	
+    	sub a0, a0, t0
+    	addi a0, a0, 10
+    	jr ra
+
+maiuscula:
+	#intervalo
+    	li t0, 65 #A
+    	li t1, 70 #F
+    	
+    	blt a0, t0, erro #menor
+    	bgt a0, t1, erro #maior
+    	#se nn for nada disso, ent vai pra erro
+    	
+    
+    	sub a0, a0, t2   #(converte para 10 ou 15
+    	addi a0, a0, 10 #mantem no intervalo
+    	jr ra #retorna valor 
+
+
+erro:
+    	li a0, 0 #retorna 0 como erro
+    	jr ra

@@ -1,0 +1,133 @@
+.data
+	nlinha: .asciz "\n"
+	string: .space 49 #guarda 48 caracteres + \0
+	hexadecimal: .asciz  "0123456789abcdef"
+	
+.text 
+.globl main
+
+main:
+	#Lê string
+	li a7, 8
+	la a0, string #carrega dentro de string
+	li a1, 49 #48 + \0
+	ecall
+	
+    	la s0, string # s0 serve como ponteiro da string
+    	li s1, 0 # s1 = buffer de bits (até 24 bits)/ montante
+    	li s2, 0 # s2 contador
+    	la s3, hexadecimal # s3 ponteiro para tabela hexadecimal
+    	
+loop:
+	lb t0, 0(s0) #recebe a posicao do vetor da string
+	beqz t0, fim #se for fim da string (\0), acaba
+	
+	li t1, '='
+	beq t0, t1, volta2  # ignora '=' e continua
+
+    	
+    	li t3, 'A' #atribui um intervalo, no caso 0 a 25
+	li t4, 'Z' #25
+	
+	blt t0, t3, minus #se t0 for menor que A, vai para minus
+	bgt t0, t4, minus #se t0 for maior que Z, vai para minus
+
+	sub t2, t0, t3 # t2 = t0-'A' → valor de 0 a 25 / valor convertido, se t0=66 e A=65, T2=1(B)
+	
+	j valor
+	
+minus:
+	li t3, 'a' #mesma coisa, serve paa averiguar intervalo
+	li t4, 'z'
+	
+	blt t0, t3, numero #se nn é minuscula nem maiuscula, so pode ser numero
+	bgt t0, t4, numero
+
+	sub t2, t0, t3 #t2=t0-'a'
+	addi t2, t2, 26 #mantem no intervalo das minusculas(26 a 51)
+	
+	j valor
+	
+numero: 
+	li t3, '0'
+	li t4, '9'
+	
+	blt t0, t3, sinal
+    	bgt t0, t4, sinal
+    	
+    	sub t2, t0, t3
+    	addi t2, t2, 52 #se mantem no numero, 0->9 (52 a 61)
+    	
+    	j valor
+    	
+sinal:
+	li t3, '+'
+    	beq t0, t3, mais #nesse caso é se for igual ao sinal de +
+    	
+    	li t3, '/'
+    	beq t0, t3, barra
+    	
+    	j volta #caso nao seja nenhum dos dois, simplesmente "volta"
+    	
+mais:
+    	li t2, 62 #+
+    	j valor
+    	
+barra:
+    	li t2, 63 #/
+    	j valor
+    	
+volta:
+	addi s0, s0, 1 #aprox caracter
+	j loop #como vai assumir algum valor, ele volta com o + 1 no contador, indo ate acabar a string
+	
+
+valor: 
+    	slli s1, s1, 6 #desloca 6 para esquerda
+    	or s1, s1, t2 #coloca os 6 bits no final
+    	addi s2, s2, 6 #soma os bit n buffer(montante)
+    	
+    	j printa
+
+    	
+printa:
+    	li t3, 8
+    	blt s2, t3, volta2   #confere se tem 8 bits
+    	
+    	addi s2, s2, -8 #usa 8 bits retrado de s2
+    	srl t4, s1, s2  #alinha byte no final
+    	andi t4, t4, 0xFF #pega só os 8 bits que precisa, os menos significativos
+
+    	srli t5, t4, 4 #4 bits da esquerda
+    	add t6, s3, t5 #pega o correspondente hexadecimal
+    	lb a0, 0(t6)  #carrega caractere atual
+    	
+    	#Printa string (esquerda
+    	li a7, 11
+    	ecall
+
+    	andi t5, t4, 0x0F  #4 bits da direita
+    	add t6, s3, t5
+    	lb a0, 0(t6)
+    	
+    	#printa string(direita
+    	li a7, 11
+    	ecall
+
+    	j printa #printa até nao dar mais
+    	
+volta2:
+    	addi s0, s0, 1
+    	j loop
+
+    	
+fim:
+	#quebra linha
+	la a0, nlinha
+    	li a7, 4
+    	ecall
+
+	#Finaliza tudo
+	li a7, 10
+	ecall
+	
